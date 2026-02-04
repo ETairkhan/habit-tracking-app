@@ -6,7 +6,7 @@ import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import habitRoutes from "./routes/habitRoutes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
-
+import checkinRoutes from "./routes/checkinRoutes.js"; 
 dotenv.config();
 
 export const createApp = () => {
@@ -29,8 +29,10 @@ export const createApp = () => {
   app.use("/api/auth", authRoutes);
   app.use("/api/users", userRoutes);
   app.use("/api/habits", habitRoutes);
+  app.use("/api/checkins", checkinRoutes);
 
   app.use(errorHandler);
+  
 
   return app;
 };
