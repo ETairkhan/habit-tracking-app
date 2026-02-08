@@ -1,25 +1,72 @@
 import { Day } from "../models/Day.js";
 import { Habit } from "../models/Habit.js";
 
-// Создать новый день
+// Normalize date to ISO string format (YYYY-MM-DD)
+const normalizeDate = (date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString().split("T")[0];
+};
+
+// Create a new day
 export const createDay = async (req, res) => {
   try {
     const { date, habits, dayNotes, mood, energy, tags } = req.body;
     const userId = req.user.id;
 
-    // Проверка: день уже существует?
+    // Parse and normalize the date
+    const dateObj = new Date(date);
+    dateObj.setHours(0, 0, 0, 0);
+    
+    // Check if day already exists for this user on this date
     const existingDay = await Day.findOne({
       user: userId,
-      date: new Date(date).toDateString(),
-    });
+      date: {
+        $gte: dateObj,
+        $lt: new Date(dateObj.getTime() + 24 * 60 * 60 * 1000),
+      },
+    }).populate("habits.habit");
 
+    // If day exists, update it instead of creating a new one
     if (existingDay) {
-      return res
-        .status(400)
-        .json({ error: "День уже существует на эту дату" });
+      if (dayNotes !== undefined) existingDay.dayNotes = dayNotes;
+      if (mood !== undefined) existingDay.mood = mood;
+      if (energy !== undefined) existingDay.energy = energy;
+      if (tags !== undefined) existingDay.tags = tags;
+
+      // Add new habits if provided
+      if (habits && habits.length > 0) {
+        const habitList = await Habit.find({
+          _id: { $in: habits },
+          user: userId,
+        });
+
+        if (habitList.length !== habits.length) {
+          return res.status(400).json({ error: "РќРµРєРѕС‚РѕСЂС‹Рµ РїСЂРёРІС‹С‡РєРё РЅРµ СЃСѓС‰РµСЃС‚РІСѓСЋС‚" });
+        }
+
+        // Add only new habits that aren't already in the day
+        habits.forEach((habitId) => {
+          if (!existingDay.habits.some((h) => h.habit._id.toString() === habitId)) {
+            existingDay.habits.push({
+              habit: habitId,
+              completed: false,
+              quality: null,
+              notes: "",
+            });
+          }
+        });
+
+        existingDay.totalHabits = existingDay.habits.length;
+      }
+
+      await existingDay.save();
+      await existingDay.populate("habits.habit");
+      return res.status(200).json(existingDay);
     }
 
-    // Проверка привычек
+    // Create new day if it doesn't exist
+    // Validate habits
     let dayHabits = [];
     if (habits && habits.length > 0) {
       const habitList = await Habit.find({
@@ -28,7 +75,7 @@ export const createDay = async (req, res) => {
       });
 
       if (habitList.length !== habits.length) {
-        return res.status(400).json({ error: "Некоторые привычки не найдены" });
+        return res.status(400).json({ error: "РќРµРєРѕС‚РѕСЂС‹Рµ РїСЂРёРІС‹С‡РєРё РЅРµ СЃСѓС‰РµСЃС‚РІСѓСЋС‚" });
       }
 
       dayHabits = habits.map((habitId) => ({
@@ -41,7 +88,7 @@ export const createDay = async (req, res) => {
 
     const newDay = new Day({
       user: userId,
-      date: new Date(date),
+      date: dateObj,
       habits: dayHabits,
       dayNotes: dayNotes || "",
       mood: mood || null,
@@ -58,11 +105,12 @@ export const createDay = async (req, res) => {
 
     res.status(201).json(newDay);
   } catch (error) {
+    console.error("Create day error:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
-// Получить дни пользователя (с фильтрацией по дате)
+// Get all days for a user (with optional filtering)
 export const getUserDays = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -70,7 +118,7 @@ export const getUserDays = async (req, res) => {
 
     let query = { user: userId };
 
-    // Фильтр по диапазону дат
+    // Filter by date range
     if (startDate || endDate) {
       query.date = {};
       if (startDate) {
@@ -81,7 +129,7 @@ export const getUserDays = async (req, res) => {
       }
     }
 
-    // Фильтр по статусу
+    // Filter by status
     if (status) {
       query.status = status;
     }
@@ -96,7 +144,7 @@ export const getUserDays = async (req, res) => {
   }
 };
 
-// Получить день по ID
+// Get a specific day by ID
 export const getDayById = async (req, res) => {
   try {
     const { dayId } = req.params;
@@ -108,7 +156,7 @@ export const getDayById = async (req, res) => {
     }).populate("habits.habit");
 
     if (!day) {
-      return res.status(404).json({ error: "День не найден" });
+      return res.status(404).json({ error: "Р”РµРЅСЊ РЅРµ РЅР°Р№РґРµРЅ" });
     }
 
     res.json(day);
@@ -117,7 +165,7 @@ export const getDayById = async (req, res) => {
   }
 };
 
-// Обновить день
+// Update a day
 export const updateDay = async (req, res) => {
   try {
     const { dayId } = req.params;
@@ -127,10 +175,10 @@ export const updateDay = async (req, res) => {
     const day = await Day.findOne({ _id: dayId, user: userId });
 
     if (!day) {
-      return res.status(404).json({ error: "День не найден" });
+      return res.status(404).json({ error: "Р”РµРЅСЊ РЅРµ РЅР°Р№РґРµРЅ" });
     }
 
-    // Обновляем поля
+    // Update fields
     if (dayNotes !== undefined) day.dayNotes = dayNotes;
     if (mood !== undefined) day.mood = mood;
     if (energy !== undefined) day.energy = energy;
@@ -146,7 +194,7 @@ export const updateDay = async (req, res) => {
   }
 };
 
-// Добавить привычку к дню
+// Add a habit to a day
 export const addHabitToDay = async (req, res) => {
   try {
     const { dayId } = req.params;
@@ -156,21 +204,19 @@ export const addHabitToDay = async (req, res) => {
     const day = await Day.findOne({ _id: dayId, user: userId });
 
     if (!day) {
-      return res.status(404).json({ error: "День не найден" });
+      return res.status(404).json({ error: "Р”РµРЅСЊ РЅРµ РЅР°Р№РґРµРЅ" });
     }
 
-    // Проверка: привычка существует?
+    // Check if habit exists
     const habit = await Habit.findOne({ _id: habitId, user: userId });
 
     if (!habit) {
-      return res.status(404).json({ error: "Привычка не найдена" });
+      return res.status(404).json({ error: "РџСЂРёРІС‹С‡РєР° РЅРµ РЅР°Р№РґРµРЅР°" });
     }
 
-    // Проверка: привычка уже в этом дне?
+    // Check if habit is already in the day
     if (day.habits.some((h) => h.habit.toString() === habitId)) {
-      return res
-        .status(400)
-        .json({ error: "Привычка уже добавлена в этот день" });
+      return res.status(400).json({ error: "РџСЂРёРІС‹С‡РєР° СѓР¶Рµ РґРѕР±Р°РІР»РµРЅР° РІ СЌС‚РѕС‚ РґРµРЅСЊ" });
     }
 
     day.habits.push({
@@ -193,7 +239,7 @@ export const addHabitToDay = async (req, res) => {
   }
 };
 
-// Удалить привычку из дня
+// Remove a habit from a day
 export const removeHabitFromDay = async (req, res) => {
   try {
     const { dayId, habitId } = req.params;
@@ -202,7 +248,7 @@ export const removeHabitFromDay = async (req, res) => {
     const day = await Day.findOne({ _id: dayId, user: userId });
 
     if (!day) {
-      return res.status(404).json({ error: "День не найден" });
+      return res.status(404).json({ error: "Р”РµРЅСЊ РЅРµ РЅР°Р№РґРµРЅ" });
     }
 
     day.habits = day.habits.filter((h) => h.habit.toString() !== habitId);
@@ -221,7 +267,7 @@ export const removeHabitFromDay = async (req, res) => {
   }
 };
 
-// Отметить привычку как выполненную
+// Mark a habit as completed/incomplete in a day
 export const checkHabitInDay = async (req, res) => {
   try {
     const { dayId, habitId } = req.params;
@@ -231,15 +277,13 @@ export const checkHabitInDay = async (req, res) => {
     const day = await Day.findOne({ _id: dayId, user: userId });
 
     if (!day) {
-      return res.status(404).json({ error: "День не найден" });
+      return res.status(404).json({ error: "Р”РµРЅСЊ РЅРµ РЅР°Р№РґРµРЅ" });
     }
 
     const habitEntry = day.habits.find((h) => h.habit.toString() === habitId);
 
     if (!habitEntry) {
-      return res
-        .status(404)
-        .json({ error: "Привычка не найдена в этом дне" });
+      return res.status(404).json({ error: "РџСЂРёРІС‹С‡РєР° РЅРµ РЅР°Р№РґРµРЅР° РІ СЌС‚РѕРј РґРЅРµ" });
     }
 
     habitEntry.completed = completed;
@@ -247,7 +291,7 @@ export const checkHabitInDay = async (req, res) => {
     if (notes !== undefined) habitEntry.notes = notes;
     if (completed) habitEntry.checkedAt = new Date();
 
-    // Пересчет статистики
+    // Recalculate stats
     day.completedHabits = day.habits.filter((h) => h.completed).length;
     day.daySuccessRate =
       day.totalHabits > 0 ? (day.completedHabits / day.totalHabits) * 100 : 0;
@@ -261,7 +305,7 @@ export const checkHabitInDay = async (req, res) => {
   }
 };
 
-// Удалить день
+// Delete a day
 export const deleteDay = async (req, res) => {
   try {
     const { dayId } = req.params;
@@ -270,16 +314,16 @@ export const deleteDay = async (req, res) => {
     const day = await Day.findOneAndDelete({ _id: dayId, user: userId });
 
     if (!day) {
-      return res.status(404).json({ error: "День не найден" });
+      return res.status(404).json({ error: "Р”РµРЅСЊ РЅРµ РЅР°Р№РґРµРЅ" });
     }
 
-    res.json({ message: "День удален успешно" });
+    res.json({ message: "Р”РµРЅСЊ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅ" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// Получить месячный календарь дней пользователя
+// Get monthly calendar view
 export const getMonthlyDays = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -287,12 +331,18 @@ export const getMonthlyDays = async (req, res) => {
 
     if (!year || !month) {
       return res.status(400).json({
-        error: "Требуются параметры year и month",
+        error: "Required parameters: year and month",
       });
     }
 
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
+    const numYear = parseInt(year);
+    const numMonth = parseInt(month);
+
+    // Create proper date boundaries
+    const startDate = new Date(numYear, numMonth - 1, 1);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const endDate = new Date(numYear, numMonth, 0);
     endDate.setHours(23, 59, 59, 999);
 
     const days = await Day.find({
@@ -305,29 +355,35 @@ export const getMonthlyDays = async (req, res) => {
       .sort({ date: 1 })
       .populate("habits.habit");
 
-    // Создание календаря с днями или пустыми полями
+    // Create map for O(1) lookup
+    const dayMap = {};
+    days.forEach(d => {
+      const dateStr = d.date.toISOString().split("T")[0];
+      dayMap[dateStr] = d;
+    });
+
+    // Generate calendar with null entries for missing days
     const monthDays = [];
-    const daysInMonth = new Date(year, month, 0).getDate();
+    const daysInMonth = new Date(numYear, numMonth, 0).getDate();
+    const weekdayNames = ["РїРЅ", "РІС‚", "СЃСЂ", "С‡С‚", "РїС‚", "СЃР±", "РІСЃ"];
 
     for (let i = 1; i <= daysInMonth; i++) {
-      const date = new Date(year, month - 1, i);
-      const dayData = days.find(
-        (d) =>
-          d.date.getDate() === i &&
-          d.date.getMonth() === month - 1 &&
-          d.date.getFullYear() === parseInt(year)
-      );
+      const date = new Date(numYear, numMonth - 1, i);
+      date.setHours(0, 0, 0, 0);
+      const dateStr = date.toISOString().split("T")[0];
+      // Convert JS weekday (0=Sun) to ISO (0=Mon)
+      const dayOfWeek = weekdayNames[(date.getDay() + 6) % 7];
 
       monthDays.push({
-        date: date.toDateString(),
-        day: dayData || null,
-        dayOfWeek: date.toLocaleDateString("ru-RU", { weekday: "short" }),
+        date: dateStr,
+        day: dayMap[dateStr] || null,
+        dayOfWeek,
       });
     }
 
     res.json({
-      year: parseInt(year),
-      month: parseInt(month),
+      year: numYear,
+      month: numMonth,
       days: monthDays,
     });
   } catch (error) {

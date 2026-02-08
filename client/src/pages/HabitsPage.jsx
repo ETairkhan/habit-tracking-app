@@ -1,11 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { apiClient } from "../apiClient.js";
 
+const ICON_EMOJIS = [
+  "💪", "🏃", "🥗", "😴", "🧘", "📚", "💼", "🎯",
+  "🎨", "🎵", "🏋️", "🤸", "🚴", "⛹️", "🧗", "🤾",
+  "🏊", "🏇", "⛷️", "🚣", "🎪", "🧲", "🔬", "📖",
+  "✍️", "🎭", "🎬", "🎮", "🎲", "🃏", "📱", "💻"
+];
+
 const emptyHabitForm = {
   name: "",
   description: "",
   category: "other",
   frequency: "daily",
+  icon: "🎯",
 };
 
 const HabitsPage = () => {
@@ -60,6 +68,7 @@ const HabitsPage = () => {
       description: habit.description || "",
       category: habit.category || "other",
       frequency: habit.frequency || "daily",
+      icon: habit.icon && habit.icon !== "default-icon" ? habit.icon : "🎯",
     });
     setHabitFormErrors({});
   };
@@ -90,6 +99,7 @@ const HabitsPage = () => {
         description: habitForm.description.trim(),
         category: habitForm.category,
         frequency: habitForm.frequency,
+        icon: habitForm.icon || "🎯",
       };
 
       if (editingHabitId) {
@@ -238,6 +248,27 @@ const HabitsPage = () => {
                 placeholder="Why does this habit matter to you?"
               />
             </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-2">
+                Icon
+              </label>
+              <div className="grid grid-cols-8 gap-2">
+                {ICON_EMOJIS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => setHabitForm(prev => ({ ...prev, icon: emoji }))}
+                    className={`rounded-md py-2 text-lg transition ${
+                      habitForm.icon === emoji
+                        ? "bg-emerald-500/30 border-2 border-emerald-500"
+                        : "bg-slate-800 border border-slate-700 hover:bg-slate-700"
+                    }`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="grid gap-3 md:grid-cols-2">
               <div>
                 <label
@@ -315,6 +346,7 @@ const HabitsPage = () => {
                 >
                   <div>
                     <p className="text-sm font-semibold text-white">
+                      <span className="mr-2">{habit.icon && habit.icon !== "default-icon" ? habit.icon : "🎯"}</span>
                       {habit.name}
                     </p>
                     {habit.description && (

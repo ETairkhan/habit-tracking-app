@@ -74,11 +74,11 @@ const StatsPage = () => {
   const dailyStats = daysStats.dailyStats || [];
   const bestDay = daysStats.bestDay || null;
 
-  // Подсчитаем дни с выполненными привычками
+  // Count days with completed habits
   const completedDays = dailyStats.filter((d) => d.completedHabits > 0).length;
   const avgSuccessRate = dailyStats.length > 0
     ? Math.round(
-        dailyStats.reduce((sum, d) => sum + (d.daySuccessRate || 0), 0) /
+        dailyStats.reduce((sum, d) => sum + (d.successRate || 0), 0) /
           dailyStats.length
       )
     : 0;
@@ -148,7 +148,7 @@ const StatsPage = () => {
             </p>
             <div className="best-day-stats">
               <span>{bestDay.completedHabits} привычек выполнено</span>
-              <span>{Math.round(bestDay.daySuccessRate)}% успеха</span>
+              <span>{Math.round(bestDay.successRate)}% успеха</span>
             </div>
           </div>
         </div>
@@ -162,7 +162,7 @@ const StatsPage = () => {
             {dailyStats
               .sort((a, b) => new Date(b.date) - new Date(a.date))
               .map((day) => (
-                <div key={day._id} className="history-row">
+                <div key={day.date} className="history-row">
                   <div className="history-date">
                     <div className="date-number">
                       {new Date(day.date).getDate()}
@@ -195,12 +195,12 @@ const StatsPage = () => {
                       <div
                         className="progress-fill"
                         style={{
-                          width: `${day.daySuccessRate || 0}%`,
+                          width: `${day.successRate || 0}%`,
                         }}
                       />
                     </div>
                     <div className="percent-text">
-                      {Math.round(day.daySuccessRate || 0)}%
+                      {Math.round(day.successRate || 0)}%
                     </div>
                   </div>
 

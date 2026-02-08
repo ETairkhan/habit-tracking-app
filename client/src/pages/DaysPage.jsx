@@ -65,14 +65,14 @@ const DaysPage = () => {
     e.preventDefault();
     try {
       const dayData = {
-        date: new Date(newDayForm.date),
+        date: newDayForm.date,
         dayNotes: newDayForm.dayNotes,
         mood: parseInt(newDayForm.mood),
         energy: parseInt(newDayForm.energy),
         habits: newDayForm.habits,
         tags: newDayForm.tags.split(",").map((t) => t.trim()).filter((t) => t),
       };
-      await dayAPI.create(dayData);
+      const response = await dayAPI.create(dayData);
       setShowCreateModal(false);
       setNewDayForm({
         date: new Date().toISOString().split("T")[0],
@@ -83,10 +83,13 @@ const DaysPage = () => {
         tags: "",
       });
       loadData();
-      showToast("День создан!", "success");
+      
+      // Show different message based on response status
+      const message = response.status === 201 ? "День создан!" : "День обновлён!";
+      showToast(message, "success");
     } catch (error) {
       console.error("Create error:", error);
-      showToast("Ошибка создания дня", "error");
+      showToast("Ошибка при сохранении дня", "error");
     }
   };
 
@@ -169,6 +172,33 @@ const DaysPage = () => {
     return moods[mood] || "😐";
   };
 
+  const getHabitIcon = (icon) => {
+    if (!icon || icon === "default-icon") return "🎯";
+    return icon;
+  };
+
+  const handleCalendarDayClick = (dayData) => {
+    const hasDay = dayData.day !== null;
+    if (hasDay) {
+      // Если день уже существует, выбираем его для просмотра
+      setSelectedDay(dayData.day);
+    } else {
+      // Если дня нет, открываем модаль для создания с этой датой
+      const dayDate = typeof dayData.date === 'string' 
+        ? dayData.date 
+        : new Date(dayData.date).toISOString().split("T")[0];
+      setNewDayForm({
+        date: dayDate,
+        dayNotes: "",
+        mood: 3,
+        energy: 3,
+        habits: [],
+        tags: "",
+      });
+      setShowCreateModal(true);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -210,20 +240,23 @@ const DaysPage = () => {
             {days && days.length > 0 ? (
               days.map((dayData, index) => {
                 const hasDay = dayData.day !== null;
-                const isToday = new Date(dayData.date).toDateString() === new Date().toDateString();
-                const isSelected = selectedDay && new Date(selectedDay.date).toDateString() === new Date(dayData.date).toDateString();
+                const dayDate = typeof dayData.date === 'string' 
+                  ? new Date(dayData.date) 
+                  : new Date(dayData.date);
+                const isToday = dayDate.toDateString() === new Date().toDateString();
+                const isSelected = selectedDay && new Date(selectedDay.date).toDateString() === dayDate.toDateString();
 
                 return (
                   <div
                     key={index}
-                    onClick={() => { if (hasDay) setSelectedDay(dayData.day); }}
+                    onClick={() => handleCalendarDayClick(dayData)}
                     className={`calendar-day-small ${hasDay ? "has-day" : ""} ${isToday ? "today" : ""} ${isSelected ? "selected" : ""}`}
                   >
-                    <div className="day-number">{new Date(dayData.date).getDate()}</div>
+                    <div className="day-number">{dayDate.getDate()}</div>
                     {hasDay && (
                       <div className="day-mark">
                         <span className="mood">{getMoodEmoji(dayData.day.mood)}</span>
-                        <span className="percent">{dayData.day.totalHabits > 0 ? Math.round(dayData.day.daySuccessRate) : 0}%</span>
+                        <span className="percent">{dayData.day.totalHabits > 0 ? Math.round((dayData.day.completedHabits / dayData.day.totalHabits) * 100) : 0}%</span>
                       </div>
                     )}
                   </div>
@@ -251,7 +284,8 @@ const DaysPage = () => {
                         checked={habit.completed}
                         onChange={() => handleToggleHabitCompletion(habit.habit._id)}
                       />
-                      <span>{habit.habit.icon} {habit.habit.name}</span>
+                      <span>{getHabitIcon(habit.habit.icon)} {habit.habit.name}</span>
+                      {habit.quality && <span className="quality-badge">Качество: {habit.quality}/5</span>}
                     </div>
                   ))}
                 </div>
@@ -343,7 +377,7 @@ const DaysPage = () => {
                 />
               </div>
               <div className="form-group">
-                <label>Привычки:</label>
+                <label>Привычки (выберите одну или несколько):</label>
                 {habits && habits.length > 0 ? (
                   habits.map((habit) => (
                     <label key={habit._id} className="checkbox">
@@ -358,7 +392,7 @@ const DaysPage = () => {
                           }
                         }}
                       />
-                      {habit.icon} {habit.name}
+                      {getHabitIcon(habit.icon)} {habit.name}
                     </label>
                   ))
                 ) : (
