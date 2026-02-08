@@ -6,6 +6,8 @@ import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import habitRoutes from "./routes/habitRoutes.js";
 import dayRoutes from "./routes/dayRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 dotenv.config();
@@ -33,6 +35,8 @@ export const createApp = () => {
   app.use("/api/users", userRoutes);
   app.use("/api/habits", habitRoutes);
   app.use("/api/days", dayRoutes);
+  app.use("/api/notifications", notificationRoutes);
+  app.use("/api/admin", adminRoutes);
 
   app.use(errorHandler);
 
