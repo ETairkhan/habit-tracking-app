@@ -32,7 +32,18 @@ const userSchema = new mongoose.Schema(
   {
     username: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    password: {
+      type: String,
+      required: true,
+      validate: {
+        validator: function (v) {
+          // Must not be empty, contain whitespace, or be less than 8 characters
+          return v && !/\s/.test(v) && v.length >= 8;
+        },
+        message:
+          "Password must be at least 8 characters and cannot contain any whitespace",
+      },
+    },
     displayName: { type: String },
     avatar: { type: String, default: "default-avatar.png" },
     role: {
