@@ -46,7 +46,7 @@ export const createApp = () => {
 
   // Serve static frontend files in production
   if (process.env.NODE_ENV === "production") {
-    const clientDistPath = path.join(__dirname, "..", "client", "dist");
+    const clientDistPath = path.join(__dirname, "..", "..", "client", "dist");
     app.use(express.static(clientDistPath));
     
     // Handle client-side routing
