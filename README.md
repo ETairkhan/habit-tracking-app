@@ -1,6 +1,16 @@
-## HabitFlow – Habit Tracking App
+# HabitFlow - Приложение для отслеживания привычек
 
-HabitFlow is a full-stack habit tracking app built with **Node.js + Express + MongoDB Atlas** on the backend and **React + Vite + TailwindCSS** on the frontend. It implements JWT authentication, role-based access (basic), validation, and a responsive UI to manage personal habits.
+## Project Overview
+
+HabitFlow - это полнофункциональное веб-приложение для отслеживания привычек, построенное на стеке Node.js + Express + MongoDB Atlas для бэкенда и React + Vite + TailwindCSS для фронтенда. Приложение реализует JWT-аутентификацию, ролевой доступ, валидацию данных и адаптивный интерфейс для управления личными привычками.
+
+**Основные функции:**
+- Управление привычками (создание, редактирование, удаление)
+- Ежедневное отслеживание выполнения привычек
+- Статистика и аналитика прогресса
+- Email-уведомления и напоминания
+- Админ-панель для управления пользователями
+- Многопользовательская поддержка через MongoDB Atlas
 
 **Database**: Uses **MongoDB Atlas** — a managed cloud database that supports multi-user collaboration and remote access.
 
@@ -10,70 +20,280 @@ HabitFlow is a full-stack habit tracking app built with **Node.js + Express + Mo
 - **`client`**: React + Vite frontend
 - Root `package.json` lets you run both from the project root.
 
-### Setup Instructions
+## Set up Instructions
+
+### Требования
+- Node.js 18.x или выше
+- npm или yarn
+- MongoDB Atlas (для продакшена) или локальная MongoDB
+
+### Бэкенд установка
 
 1. **Clone & install root tools**
-   - `npm install`
+   ```bash
+   npm install
+   ```
+
 2. **Backend setup**
-   - `cd server`
-   - `npm install`
-   - Create `.env` in `server` with:
-     - `MONGODB_URI=your-mongodb-atlas-uri` (copy from MongoDB Atlas Project > Connect > Connect your application)
-     - `JWT_SECRET=your-secret-key`
-     - `PORT=5000`
-     - `CLIENT_ORIGIN=http://localhost:5173`
-   - `npm run dev` or `npm start`
-3. **Frontend setup**
-   - `cd client`
-   - `npm install`
-   - Create `.env` in `client` with:
-     - `VITE_API_URL=http://localhost:5000`
-   - `npm run dev`
+   ```bash
+   cd server
+   npm install
+   ```
+
+3. **Create `.env` in `server` with:**
+   ```env
+   MONGODB_URI=your-mongodb-atlas-uri
+   JWT_SECRET=your-secret-key
+   PORT=5000
+   CLIENT_ORIGIN=http://localhost:5173
+   NODE_ENV=development
+   
+   # Опционально: для email-уведомлений
+   SMTP_HOST=smtp.mailgun.org
+   SMTP_PORT=587
+   SMTP_USER=your-smtp-username
+   SMTP_PASS=your-smtp-password
+   SMTP_FROM=noreply@habitflow.com
+   ```
+
+4. **Start backend**
+   ```bash
+   npm run dev  # для разработки
+   npm start    # для продакшена
+   ```
+
+### Фронтенд установка
+
+1. **Frontend setup**
+   ```bash
+   cd client
+   npm install
+   ```
+
+2. **Create `.env` in `client` with:**
+   ```env
+   VITE_API_URL=http://localhost:5000
+   ```
+
+3. **Start frontend**
+   ```bash
+   npm run dev
+   ```
+
 4. **Run both from root**
-   - `npm run dev`
+   ```bash
+   npm run dev
+   ```
 
-### API Overview
+Приложение будет доступно по адресу `http://localhost:5173`
 
-#### Authentication
+## API Documentation
 
-- `POST /api/auth/register` — Register new user
-- `POST /api/auth/login` — Login & receive JWT token
+### Authentication
 
-#### Users (Private, JWT Required)
+#### `POST /api/auth/register`
+Регистрация нового пользователя
 
-- `GET /api/users/profile` — Get current user profile
-- `PUT /api/users/profile` — Update profile (email, username, displayName)
-- `GET /api/users/stats` — Get aggregated statistics (habits by category, by frequency, top category, overall success rate)
+**Request Body:**
+```json
+{
+  "username": "testuser",
+  "email": "test@example.com",
+  "password": "password123",
+  "displayName": "Test User"
+}
+```
 
-#### Habits (Private, JWT Required)
+**Response (201):**
+```json
+{
+  "message": "User registered successfully",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "64f1a2b3c4d5e6f7g8h9i0j1",
+    "username": "testuser",
+    "email": "test@example.com",
+    "displayName": "Test User"
+  }
+}
+```
 
-- `POST /api/habits` — Create new habit
-- `GET /api/habits` — List all user's habits
-- `GET /api/habits/:id` — Get habit details
-- `PUT /api/habits/:id` — Update habit
-- `DELETE /api/habits/:id` — Delete habit
+#### `POST /api/auth/login`
+Вход пользователя
 
-#### Habit Checkins (Daily Tracking, Private, JWT Required)
+**Request Body:**
+```json
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+```
 
-- `POST /api/habits/:habitId/checkins` — Mark habit as completed for a specific date
-- `GET /api/habits/:habitId/checkins/stats` — Get habit statistics (current streak, longest streak, success rate, last 30 days breakdown)
-- `GET /api/habits/:habitId/checkins` — Get checkins for date range
-- `PUT /api/habits/:habitId/checkins/:checkinId` — Update a checkin
-- `DELETE /api/habits/:habitId/checkins/:checkinId` — Delete a checkin
+**Response (200):**
+```json
+{
+  "message": "Login successful",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "64f1a2b3c4d5e6f7g8h9i0j1",
+    "username": "testuser",
+    "email": "test@example.com",
+    "displayName": "Test User"
+  }
+}
+```
 
-#### Notifications (Email Reminders with SMTP, Private, JWT Required)
+### Users (Private, JWT Required)
 
-- `POST /api/notifications/test` — Send a test reminder email to current user
-- `POST /api/notifications/weekly-preview` — Send weekly report email with list of user's habits
+#### `GET /api/users/profile`
+Получить профиль текущего пользователя
 
-#### Admin Routes (Admin Role Required, JWT Required)
+**Headers:**
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
 
-- `GET /api/admin/users` — Get all users (admin only)
-- `GET /api/admin/users-with-habits` — Get all users with their habit counts and details (admin only)
-- `POST /api/admin/make-admin` — Promote a user to admin role (admin only)
-- `POST /api/admin/remove-admin` — Downgrade an admin user to regular user (admin only)
-- `DELETE /api/admin/users/:userId` — Delete a user and all their associated data (admin only)
-- `DELETE /api/admin/users/:userId/habits` — Delete all habits for a specific user (admin only)
+**Response (200):**
+```json
+{
+  "user": {
+    "id": "64f1a2b3c4d5e6f7g8h9i0j1",
+    "username": "testuser",
+    "email": "test@example.com",
+    "displayName": "Test User",
+    "role": "user",
+    "stats": {
+      "totalHabits": 5,
+      "totalCheckins": 25,
+      "overallSuccessRate": 80
+    }
+  }
+}
+```
+
+#### `PUT /api/users/profile`
+Обновить профиль пользователя
+
+#### `GET /api/users/stats`
+Получить агрегированную статистику (habits by category, by frequency, top category, overall success rate)
+
+### Habits (Private, JWT Required)
+
+#### `GET /api/habits`
+Получить все привычки текущего пользователя
+
+**Response (200):**
+```json
+{
+  "habits": [
+    {
+      "id": "64f1a2b3c4d5e6f7g8h9i0j2",
+      "name": "Утренняя зарядка",
+      "description": "15 минут упражнений каждое утро",
+      "category": "health",
+      "frequency": "daily",
+      "statistics": {
+        "currentStreak": 7,
+        "longestStreak": 15,
+        "successRate": 85
+      }
+    }
+  ]
+}
+```
+
+#### `POST /api/habits`
+Создать новую привычку
+
+**Request Body:**
+```json
+{
+  "name": "Чтение книг",
+  "description": "Читать 30 минут каждый день",
+  "category": "learning",
+  "frequency": "daily"
+}
+```
+
+#### `GET /api/habits/:id`
+Получить детали привычки
+
+#### `PUT /api/habits/:id`
+Обновить привычку
+
+#### `DELETE /api/habits/:id`
+Удалить привычку
+
+### Habit Checkins (Daily Tracking, Private, JWT Required)
+
+#### `POST /api/habits/:habitId/checkins`
+Отметить привычку как выполненную для конкретной даты
+
+**Request Body:**
+```json
+{
+  "date": "2024-01-15",
+  "completed": true,
+  "notes": "Отличная тренировка!"
+}
+```
+
+#### `GET /api/habits/:habitId/checkins/stats`
+Получить статистику по привычке (current streak, longest streak, success rate, last 30 days breakdown)
+
+**Response (200):**
+```json
+{
+  "statistics": {
+    "currentStreak": 7,
+    "longestStreak": 15,
+    "successRate": 85,
+    "totalCheckins": 30,
+    "completedCheckins": 25,
+    "last30Days": [
+      { "date": "2024-01-01", "completed": true },
+      { "date": "2024-01-02", "completed": false }
+    ]
+  }
+}
+```
+
+#### `GET /api/habits/:habitId/checkins`
+Получить отметки за период
+
+#### `PUT /api/habits/:habitId/checkins/:checkinId`
+Обновить отметку
+
+#### `DELETE /api/habits/:habitId/checkins/:checkinId`
+Удалить отметку
+
+### Notifications (Email Reminders with SMTP, Private, JWT Required)
+
+#### `POST /api/notifications/test`
+Отправить тестовое email-уведомление текущему пользователю
+
+#### `POST /api/notifications/weekly-preview`
+Отправить еженедельный отчет со списком привычек пользователя
+
+### Admin Routes (Admin Role Required, JWT Required)
+
+#### `GET /api/admin/users`
+Получить всех пользователей (только для админа)
+
+#### `GET /api/admin/users-with-habits`
+Получить всех пользователей с количеством привычек и деталями (только для админа)
+
+#### `POST /api/admin/make-admin`
+Повысить пользователя до роли админа (только для админа)
+
+#### `POST /api/admin/remove-admin`
+Понизить админа до обычного пользователя (только для админа)
+
+#### `DELETE /api/admin/users/:userId`
+Удалить пользователя и все связанные данные (только для админа)
+
+#### `DELETE /api/admin/users/:userId/habits`
+Удалить все привычки конкретного пользователя (только для админа)
 
 ### Database Models
 
@@ -81,132 +301,36 @@ HabitFlow is a full-stack habit tracking app built with **Node.js + Express + Mo
 - **Habit** — name, description, category, frequency, user reference, statistics (currentStreak, longestStreak, successRate)
 - **Checkin** — user, habit, date, completed flag, notes (for daily tracking)
 
-### Features
+## Screenshots of Features
 
-- **Habit Management** — Create, update, delete habits with categories (health, productivity, learning, mindfulness, social, other) and frequencies (daily, weekly, custom)
-- **Daily Tracking** — Mark habits as completed/incomplete for each day
-- **Statistics** — Track streaks, success rates, and view statistics by category and frequency
-- **Multi-User Support** — Team of 4+ can share same MongoDB Atlas cluster; each user manages their own habits
-- **Authentication** — JWT-based secure access
-- **Responsive UI** — Mobile-friendly design with TailwindCSS
-- **Email Notifications** — Send habit reminders and weekly reports via SMTP
-- **Admin Panel** — Admin users can view, manage users, and delete user data
+### Главная страница - Дашборд привычек
+*Описание: Основной экран приложения показывает все привычки пользователя с их текущим статусом, статистикой и возможностью быстрой отметки о выполнении.*
 
-### Email Reminders (SMTP Configuration)
+### Страница создания привычки
+*Описание: Форма создания новой привычки с полями для названия, описания, выбора категории (здоровье, продуктивность, обучение, mindfulness, социальное, другое) и частоты выполнения.*
 
-HabitFlow supports sending email notifications to users using SMTP. Follow these steps to enable email features:
+### Календарь отслеживания
+*Описание: Календарный вид показывает историю выполнения привычек за месяц с цветовой индикацией успешных дней и возможностью добавления заметок.*
 
-#### 1. Choose an Email Service Provider
+### Статистика и аналитика
+*Описание: Детальная статистика по привычкам включает графики успешности, текущие и рекордные серии, а также анализ по категориям и частотам.*
 
-Select a free email service:
+### Профиль пользователя
+*Описание: Страница профиля позволяет редактировать личные данные (email, username, displayName), просматривать общую статистику и настраивать email-уведомления.*
 
-- **Mailgun** (free tier): https://www.mailgun.com/
-- **SendGrid** (free tier): https://sendgrid.com/
-- **Postmark** (paid but reliable): https://postmarkapp.com/
-- **Gmail SMTP** (Google Account): Use your Gmail address with app-specific password
+### Админ-панель
+*Описание: Панель администратора для управления пользователями, просмотра статистики по всем пользователям, повышения/понижения ролей и удаления пользовательских данных.*
 
-#### 2. Get SMTP Credentials
+### Email-уведомления
+*Описание: Пример email-уведомления с напоминанием о привычке и еженедельным отчетом о прогрессе. Поддерживаются SMTP сервисы Mailgun, SendGrid, Postmark.*
 
-Example for **Mailgun**:
+### Мобильная версия
+*Описание: Адаптивный дизайн обеспечивает полноценную работу приложения на мобильных устройствах с сохранением всех функций.*
 
-- Create account at mailgun.com
-- Go to Domain Settings > SMTP credentials
-- Get: Username (e.g., postmaster@sandbox123.mailgun.org), Password, Host: smtp.mailgun.org
+---
 
-#### 3. Configure .env File
+## Links
 
-In `server/.env`, add these variables:
+**GitHub Repository:** https://github.com/ETairkhan/habit-tracking-app
 
-```env
-SMTP_HOST=smtp.mailgun.org
-SMTP_PORT=587
-SMTP_USER=postmaster@sandbox123.mailgun.org
-SMTP_PASS=your-password-here
-SMTP_FROM=noreply@habitflow.com
-```
-
-#### 4. Install Dependencies
-
-Run in `server` directory:
-
-```bash
-npm install nodemailer
-```
-
-This is already in `package.json`, so just run:
-
-```bash
-npm install
-```
-
-#### 5. Test Email Functionality
-
-Send a test email using the API:
-
-```bash
-curl -X POST http://localhost:5000/api/notifications/test \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json"
-```
-
-Response:
-
-```json
-{
-  "message": "Test notification sent successfully",
-  "email": "user@example.com"
-}
-```
-
-#### 6. Send Weekly Report
-
-Get a weekly habit report email:
-
-```bash
-curl -X POST http://localhost:5000/api/notifications/weekly-preview \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json"
-```
-
-Response:
-
-```json
-{
-  "message": "Weekly report sent successfully",
-  "habitCount": 5,
-  "email": "user@example.com"
-}
-```
-
-**Notes:**
-
-- Emails are sent asynchronously
-- Check spam folder if emails don't appear in inbox
-- Free tiers have rate limits (Mailgun: 300/day, SendGrid: 100/day)
-- Each environment (dev, staging, production) needs different SMTP credentials
-
-### Key Stats Endpoints
-
-**GET /api/users/stats** returns:
-
-```json
-{
-  "totalHabits": 5,
-  "totalCheckins": 25,
-  "totalCompletedCheckins": 20,
-  "overallSuccessRate": 80,
-  "habitsByCategory": [
-    { "category": "health", "count": 2, "habits": [...] },
-    { "category": "productivity", "count": 2, "habits": [...] }
-  ],
-  "habitsByFrequency": [
-    { "frequency": "daily", "count": 4 },
-    { "frequency": "weekly", "count": 1 }
-  ],
-  "topCategory": { "category": "health", "count": 2 },
-  "avgHabitsPerCategory": 1.7,
-  "topHabits": [...]
-}
-```
-
-The frontend includes pages for registration, login, viewing and managing habits, daily checkins, statistics dashboard, and a basic profile page, all styled with TailwindCSS and mobile-responsive layouts.
+**Deployed Project:** https://habit-tracking-app-rama.onrender.com
