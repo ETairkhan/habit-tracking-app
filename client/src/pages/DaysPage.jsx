@@ -27,9 +27,12 @@ const DaysPage = () => {
   useEffect(() => {
     if (days.length > 0) {
       const today = new Date();
-      const todayData = days.find(
-        (d) => new Date(d.date).toDateString() === today.toDateString()
-      );
+      today.setHours(0, 0, 0, 0);
+      const todayData = days.find((d) => {
+        const dayDate = new Date(d.date + 'T00:00:00');
+        dayDate.setHours(0, 0, 0, 0);
+        return dayDate.getTime() === today.getTime();
+      });
       if (todayData && todayData.day && !selectedDay) {
         setSelectedDay(todayData.day);
       }
@@ -63,6 +66,13 @@ const DaysPage = () => {
 
   const handleCreateDay = async (e) => {
     e.preventDefault();
+    
+    // Проверяем, выбрана ли хотя бы одна привычка
+    if (newDayForm.habits.length === 0) {
+      showToast("Выберите хотя бы одну привычку", "error");
+      return;
+    }
+    
     try {
       const dayData = {
         date: newDayForm.date,
@@ -84,7 +94,6 @@ const DaysPage = () => {
       });
       loadData();
       
-      // Show different message based on response status
       const message = response.status === 201 ? "День создан!" : "День обновлён!";
       showToast(message, "success");
     } catch (error) {
@@ -180,15 +189,20 @@ const DaysPage = () => {
   const handleCalendarDayClick = (dayData) => {
     const hasDay = dayData.day !== null;
     if (hasDay) {
-      // Если день уже существует, выбираем его для просмотра
       setSelectedDay(dayData.day);
     } else {
-      // Если дня нет, открываем модаль для создания с этой датой
+      // Исправляем проблему с часовым поясом
       const dayDate = typeof dayData.date === 'string' 
-        ? dayData.date 
-        : new Date(dayData.date).toISOString().split("T")[0];
+        ? new Date(dayData.date + 'T00:00:00')
+        : new Date(dayData.date);
+      
+      // Используем UTC для корректного отображения даты
+      const year = dayDate.getUTCFullYear();
+      const month = String(dayDate.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(dayDate.getUTCDate()).padStart(2, '0');
+      
       setNewDayForm({
-        date: dayDate,
+        date: `${year}-${month}-${day}`,
         dayNotes: "",
         mood: 3,
         energy: 3,
@@ -240,11 +254,20 @@ const DaysPage = () => {
             {days && days.length > 0 ? (
               days.map((dayData, index) => {
                 const hasDay = dayData.day !== null;
+                // Исправляем получение даты
                 const dayDate = typeof dayData.date === 'string' 
-                  ? new Date(dayData.date) 
+                  ? new Date(dayData.date + 'T00:00:00')
                   : new Date(dayData.date);
-                const isToday = dayDate.toDateString() === new Date().toDateString();
-                const isSelected = selectedDay && new Date(selectedDay.date).toDateString() === dayDate.toDateString();
+                
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const compareDate = new Date(dayDate);
+                compareDate.setHours(0, 0, 0, 0);
+                
+                const isToday = compareDate.getTime() === today.getTime();
+                const isSelected = selectedDay && 
+                  new Date(selectedDay.date + 'T00:00:00').getTime() === compareDate.getTime();
 
                 return (
                   <div
@@ -252,7 +275,7 @@ const DaysPage = () => {
                     onClick={() => handleCalendarDayClick(dayData)}
                     className={`calendar-day-small ${hasDay ? "has-day" : ""} ${isToday ? "today" : ""} ${isSelected ? "selected" : ""}`}
                   >
-                    <div className="day-number">{dayDate.getDate()}</div>
+                    <div className="day-number">{dayDate.getUTCDate()}</div>
                     {hasDay && (
                       <div className="day-mark">
                         <span className="mood">{getMoodEmoji(dayData.day.mood)}</span>
@@ -377,7 +400,7 @@ const DaysPage = () => {
                 />
               </div>
               <div className="form-group">
-                <label>Привычки (выберите одну или несколько):</label>
+                <label>Привычки (выберите хотя бы одну):</label>
                 {habits && habits.length > 0 ? (
                   habits.map((habit) => (
                     <label key={habit._id} className="checkbox">
@@ -396,11 +419,20 @@ const DaysPage = () => {
                     </label>
                   ))
                 ) : (
-                  <p>Нет привычек</p>
+                  <p style={{ color: "#ef4444" }}>Сначала создайте привычки в разделе "Привычки"</p>
+                )}
+                {newDayForm.habits.length === 0 && (
+                  <p style={{ color: "#ef4444", fontSize: "0.8rem", marginTop: "0.5rem" }}>
+                    Выберите хотя бы одну привычку
+                  </p>
                 )}
               </div>
               <div className="modal-actions">
-                <button type="submit" className="btn btn-primary">
+                <button 
+                  type="submit" 
+                  className="btn btn-primary"
+                  disabled={newDayForm.habits.length === 0}
+                >
                   Создать
                 </button>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowCreateModal(false)}>
