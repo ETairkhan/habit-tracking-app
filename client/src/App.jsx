@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { apiClient } from "./apiClient.js";
 import AuthPage from "./pages/AuthPage.jsx";
@@ -7,6 +7,7 @@ import ProfilePage from "./pages/ProfilePage.jsx";
 import StatsPage from "./pages/StatsPage.jsx";
 import DaysPage from "./pages/DaysPage.jsx";
 import NotificationsPage from "./pages/NotificationsPage.jsx";
+import AdminPage from "./pages/AdminPage.jsx";
 
 const AppLayout = ({ children, onLogout, currentUser }) => {
   return (
@@ -58,6 +59,15 @@ const AppLayout = ({ children, onLogout, currentUser }) => {
                 >
                   📧 Уведомления
                 </Link>
+                {(currentUser?.role === "admin" ||
+                  currentUser?.role === "moderator") && (
+                  <Link
+                    to="/admin"
+                    className="rounded-lg px-4 py-2.5 text-slate-300 font-medium transition hover:bg-slate-800 hover:text-amber-400"
+                  >
+                    ⚙️ Admin
+                  </Link>
+                )}
                 <button
                   type="button"
                   onClick={onLogout}
@@ -131,7 +141,13 @@ const App = () => {
       <Routes>
         <Route
           path="/"
-          element={<AuthPage onAuthSuccess={handleAuthSuccess} />}
+          element={
+            currentUser ? (
+              <Navigate to="/habits" replace />
+            ) : (
+              <AuthPage onAuthSuccess={handleAuthSuccess} />
+            )
+          }
         />
         <Route
           path="/habits"
@@ -178,6 +194,19 @@ const App = () => {
           element={
             currentUser ? (
               <NotificationsPage />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            currentUser &&
+            (currentUser.role === "admin" || currentUser.role === "moderator") ? (
+              <AdminPage currentUser={currentUser} />
+            ) : currentUser ? (
+              <Navigate to="/habits" replace />
             ) : (
               <Navigate to="/" replace />
             )

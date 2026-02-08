@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
 export const apiClient = axios.create({
   baseURL: `${apiBaseUrl}/api`,
@@ -97,4 +97,15 @@ export const notificationAPI = {
     apiClient.post("/notifications/test"),
   sendWeeklyPreview: () =>
     apiClient.post("/notifications/weekly-preview"),
+};
+
+// ======================= ADMIN =======================
+export const adminAPI = {
+  getAllUsers: () => apiClient.get("/admin/users"),
+  getUsersWithHabits: () => apiClient.get("/admin/users-with-habits"),
+  setUserRole: (userId, role) =>
+    apiClient.put(`/admin/users/${userId}/role`, { role }),
+  deleteUser: (userId) => apiClient.delete(`/admin/users/${userId}`),
+  deleteUserHabits: (userId) =>
+    apiClient.delete(`/admin/users/${userId}/habits`),
 };
