@@ -6,6 +6,7 @@ import HabitsPage from "./pages/HabitsPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import StatsPage from "./pages/StatsPage.jsx";
 import DaysPage from "./pages/DaysPage.jsx";
+import NotificationsPage from "./pages/NotificationsPage.jsx";
 
 const AppLayout = ({ children, onLogout, currentUser }) => {
   return (
@@ -50,6 +51,12 @@ const AppLayout = ({ children, onLogout, currentUser }) => {
                   className="rounded-lg px-4 py-2.5 text-slate-300 font-medium transition hover:bg-slate-800 hover:text-cyan-400"
                 >
                   👤 Профиль
+                </Link>
+                <Link
+                  to="/notifications"
+                  className="rounded-lg px-4 py-2.5 text-slate-300 font-medium transition hover:bg-slate-800 hover:text-emerald-400"
+                >
+                  📧 Уведомления
                 </Link>
                 <button
                   type="button"
@@ -161,6 +168,16 @@ const App = () => {
           element={
             currentUser ? (
               <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            currentUser ? (
+              <NotificationsPage />
             ) : (
               <Navigate to="/" replace />
             )

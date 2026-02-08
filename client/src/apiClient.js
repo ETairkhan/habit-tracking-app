@@ -90,3 +90,11 @@ export const dayAPI = {
   getMonthly: (year, month) =>
     apiClient.get("/days/calendar", { params: { year, month } }),
 };
+
+// ======================= NOTIFICATIONS =======================
+export const notificationAPI = {
+  sendTestNotification: () =>
+    apiClient.post("/notifications/test"),
+  sendWeeklyPreview: () =>
+    apiClient.post("/notifications/weekly-preview"),
+};
