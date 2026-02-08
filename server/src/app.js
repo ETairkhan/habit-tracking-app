@@ -38,6 +38,16 @@ export const createApp = () => {
   app.use("/api/notifications", notificationRoutes);
   app.use("/api/admin", adminRoutes);
 
+  // Serve static frontend files in production
+  if (process.env.NODE_ENV === "production") {
+    app.use(express.static("../client/dist"));
+    
+    // Handle client-side routing
+    app.get("*", (req, res) => {
+      res.sendFile("../client/dist/index.html");
+    });
+  }
+
   app.use(errorHandler);
 
   return app;
