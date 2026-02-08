@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema(
     avatar: { type: String, default: "default-avatar.png" },
     role: {
       type: String,
-      enum: ["user", "premium", "admin"],
+      enum: ["user", "premium", "moderator", "admin"],
       default: "user",
     },
     settings: { type: userSettingsSchema, default: () => ({}) },

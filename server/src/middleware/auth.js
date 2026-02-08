@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { canManageAnyHabit } from "../config/roles.js";
 
 export const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -31,5 +32,12 @@ export const requireRole = (allowedRoles) => {
     return next();
   };
 };
+
+/**
+ * Helper: returns true if the current user can manage any habit (admin/moderator).
+ * Regular users can only manage their own habits.
+ */
+export const userCanManageAnyHabit = (req) =>
+  req.user && canManageAnyHabit(req.user.role);
 
 

@@ -9,7 +9,7 @@ const startServer = async () => {
     await connectDatabase(process.env.MONGODB_URI);
 
     const app = createApp();
-    const port = process.env.PORT || 5000;
+    const port = process.env.PORT || 5001;
 
     app.listen(port, () => {
       // eslint-disable-next-line no-console

@@ -1,5 +1,6 @@
 import { validationResult } from "express-validator";
 import { Habit } from "../models/Habit.js";
+import { userCanManageAnyHabit } from "../middleware/auth.js";
 
 export const createHabit = async (req, res, next) => {
   const validationErrors = validationResult(req);
@@ -33,10 +34,11 @@ export const getHabits = async (req, res, next) => {
 
 export const getHabitById = async (req, res, next) => {
   try {
-    const habit = await Habit.findOne({
-      _id: req.params.id,
-      user: req.user.id,
-    });
+    const query = { _id: req.params.id };
+    if (!userCanManageAnyHabit(req)) {
+      query.user = req.user.id;
+    }
+    const habit = await Habit.findOne(query);
 
     if (!habit) {
       return res.status(404).json({ message: "Habit not found" });
@@ -56,10 +58,11 @@ export const updateHabit = async (req, res, next) => {
   }
 
   try {
-    const habit = await Habit.findOne({
-      _id: req.params.id,
-      user: req.user.id,
-    });
+    const query = { _id: req.params.id };
+    if (!userCanManageAnyHabit(req)) {
+      query.user = req.user.id;
+    }
+    const habit = await Habit.findOne(query);
 
     if (!habit) {
       return res.status(404).json({ message: "Habit not found" });
@@ -77,10 +80,11 @@ export const updateHabit = async (req, res, next) => {
 
 export const deleteHabit = async (req, res, next) => {
   try {
-    const habit = await Habit.findOneAndDelete({
-      _id: req.params.id,
-      user: req.user.id,
-    });
+    const query = { _id: req.params.id };
+    if (!userCanManageAnyHabit(req)) {
+      query.user = req.user.id;
+    }
+    const habit = await Habit.findOneAndDelete(query);
 
     if (!habit) {
       return res.status(404).json({ message: "Habit not found" });
