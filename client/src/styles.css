@@ -5,20 +5,82 @@
 body {
   @apply bg-slate-950 text-slate-100;
 }
-
-
-
 /* ==================== DAYS PAGE LAYOUT ==================== */
-/* .days-layout {
+.days-layout {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(300px, 2fr);
+  /* calendar ~62.5% / day details ~37.5% to fit buttons */
+  grid-template-columns: 7fr 3fr;
   gap: 2rem;
   align-items: start;
   padding: 0 1rem;
   max-width: 1400px;
-  margin: 0 auto;
+  grid-template-columns: 1fr 1fr;
   width: 100%;
   min-height: calc(100vh - 200px);
+  box-sizing: border-box;
+*** End Patch
+
+@media (max-width: 1200px) {
+  .days-layout {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 0.5rem;
+  }
+  .calendar-section, .day-section {
+    max-width: 100vw;
+    min-width: 0;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (max-width: 900px) {
+  .days-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 0.2rem;
+  }
+  .calendar-section, .day-section {
+    max-width: 100vw;
+    min-width: 0;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0.5rem 0.1rem;
+  }
+  .calendar-grid {
+    min-height: 220px;
+    font-size: 0.95rem;
+  }
+  .calendar-day-small {
+    font-size: 0.85rem;
+    min-height: 36px;
+  }
+}
+
+@media (max-width: 600px) {
+  .days-layout {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 0;
+  }
+  .calendar-section, .day-section {
+    max-width: 100vw;
+    min-width: 0;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0.2rem 0.05rem;
+    border-radius: 0.3rem;
+  }
+  .calendar-grid {
+    min-height: 120px;
+    font-size: 0.8rem;
+  }
+  .calendar-day-small {
+    font-size: 0.7rem;
+    min-height: 24px;
+    padding: 0.05rem;
+  }
+}
 }
 
 @media (max-width: 1200px) {
@@ -26,25 +88,28 @@ body {
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
-} */
+}
 
 /* ==================== IMPROVED CALENDAR ==================== */
 .calendar-section {
   background-color: #1e293b;
   border: 1px solid #334155;
   border-radius: 0.75rem;
-  padding: 1rem;
+  padding: 0.75rem;
   height: fit-content;
   position: sticky;
-  top: 20px;
+  min-width: 600px;
   width: 100%;
-  min-width: 0;
+  min-width: 420px;
+  z-index: 10;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 @media (max-width: 768px) {
   .calendar-section {
     position: static;
-    max-width: 100%;
+    max-width: 1800px;
     padding: 0.75rem;
   }
 }
@@ -77,9 +142,10 @@ body {
   grid-template-columns: repeat(7, 1fr);
   gap: 0.25rem;
   background-color: #0f172a;
-  padding: 0.75rem;
+  padding: 0.5rem;
   border-radius: 0.5rem;
-  min-height: 300px;
+  min-height: 420px;
+  box-sizing: border-box;
 }
 
 .calendar-header {
@@ -104,15 +170,16 @@ body {
   background-color: #0f172a;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 0.75rem;
+  font-size: 1.1rem;
   position: relative;
   min-height: 40px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .calendar-day-small:hover {
   border-color: #0ea5e9;
   background-color: #1e293b;
-  transform: scale(1.05);
   z-index: 1;
 }
 
@@ -131,7 +198,6 @@ body {
   border-color: #0ea5e9;
   background-color: rgba(14, 165, 233, 0.15);
   box-shadow: 0 0 8px rgba(14, 165, 233, 0.4);
-  transform: scale(1.05);
 }
 
 .day-number {
@@ -272,11 +338,36 @@ body {
   background-color: #1e293b;
   border: 1px solid #334155;
   border-radius: 0.75rem;
-  padding: 2rem;
-  min-height: 500px;
+  padding: 1rem 0.5rem 1rem 0.5rem;
+  width: 100%;
+  max-width: 2400px;
+  min-width: 320px;
+  margin-left: auto;
+  margin-right: auto;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .day-section {
+    max-width: 420px;
+    min-width: 260px;
+    padding: 0.7rem 0.2rem 0.7rem 0.2rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .day-section {
+    max-width: 100vw;
+    min-width: 0;
+    padding: 0.3rem 0.1rem 0.3rem 0.1rem;
+    border-radius: 0.5rem;
+  }
+  min-height: 540px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  z-index: 1;
+  box-sizing: border-box;
 }
 
 .empty-state-container {
@@ -289,11 +380,22 @@ body {
 .day-detail {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.75rem;
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  padding-right: 0.5rem;
+  /* keep content visible without overflow */
+  overflow: visible;
+  padding: 0;
+}
+
+/* hide any native scrollbars completely */
+.day-detail::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+}
+.day-detail {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important; /* Firefox */
 }
 
 /* ... остальной CSS остается без изменений ... */
@@ -345,13 +447,14 @@ body {
 
 .day-meta {
   display: flex;
-  gap: 2rem;
-}
-
-.meta-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.2rem 0 0.2rem;
+  border-top: 1px solid #334155;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 1.2rem;
+  box-sizing: border-box;
   gap: 0.5rem;
 }
 
@@ -527,7 +630,8 @@ body {
   color: white;
   border: none;
   border-radius: 0.375rem;
-  cursor: pointer;
+  width: 100%;
+  min-width: 0;
   font-size: 0.8rem;
   font-weight: 500;
   transition: all 0.2s;
@@ -538,20 +642,80 @@ body {
   background-color: #0284c7;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+@media (max-width: 1200px) {
+  .day-section {
+    max-width: 900px;
+    padding: 0.8rem 0.4rem 0.8rem 0.4rem;
+  }
+  .day-actions .btn, .day-actions button {
+    max-width: 320px;
+    font-size: 1.05rem;
+    height: 48px;
+  }
+}
+
+@media (max-width: 900px) {
+  .day-section {
+    max-width: 800px;
+    min-width: 180px;
+  }
+
+  .day-actions .btn:first-child, .day-actions button:first-child {
+    min-width: 340px;
+    max-width: 650px;
+  }
+  .day-actions .btn, .day-actions button {
+    max-width: 200px;
+    font-size: 0.97rem;
+    height: 40px;
+  }
+}
+
+@media (max-width: 600px) {
+  .day-section {
+    max-width: 100vw;
+    min-width: 0;
+    padding: 0.3rem 0.1rem 0.3rem 0.1rem;
+    border-radius: 0.5rem;
+  }
+  .day-actions .btn, .day-actions button {
+    max-width: 100vw;
+    min-width: 0;
+    font-size: 0.92rem;
+    height: 36px;
+    padding: 0.3rem 0.1rem;
+  }
+}
 }
 
 /* Day actions */
 .day-actions {
   display: flex;
-  gap: 1rem;
-  padding-top: 1rem;
+  gap: 0.6rem;
+  padding: 0.4rem 0.4rem 0 0.4rem;
   border-top: 1px solid #334155;
+  flex-wrap: nowrap;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 1.2rem;
 }
 
-.day-actions .btn {
-  flex: 1;
-}
 
+.day-actions .btn, .day-actions button {
+  flex: 1 1 120px;
+  max-width: 800px;
+  font-size: 1.02rem;
+  height: 80px;
+  min-width: 100px;
+  padding: 0.5rem 0.5rem;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+  text-align: center;
+  height: 42px;
+}
 .btn-lg {
   padding: 0.9rem 1.5rem;
   font-size: 0.95rem;
@@ -1219,6 +1383,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
   padding: 0.75rem;
   background-color: #0f172a;
   border-left: 4px solid #334155;
@@ -1231,32 +1396,58 @@ body {
   background-color: rgba(16, 185, 129, 0.05);
 }
 
-.habit-info {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex: 1;
-}
-
-.habit-info input[type="checkbox"] {
+.habit-item > input[type="checkbox"] {
   width: 20px;
   height: 20px;
+  min-width: 20px;
   cursor: pointer;
   accent-color: #10b981;
+  flex-shrink: 0;
 }
 
-.habit-icon {
-  font-size: 1.25rem;
-}
-
-.habit-name {
+.habit-item > span {
   color: #cbd5e1;
   font-size: 0.875rem;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.habit-item.completed .habit-name {
+.habit-item.completed > span {
   color: #10b981;
   text-decoration: line-through;
+}
+
+.habit-item .quality-badge {
+  background-color: #334155;
+  color: #cbd5e1;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-remove-habit {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.25rem;
+  opacity: 0.7;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-remove-habit:hover {
+  opacity: 1;
+  color: #dc2626;
+  transform: scale(1.15);
 }
 
 /* ==================== ADD HABIT SECTION ==================== */
@@ -1388,6 +1579,16 @@ body {
   color: #0f172a;
 }
 
+.btn-success {
+  background-color: #06b6d4;
+  color: #072a2a;
+}
+
+.btn-success:hover {
+  background-color: #0891b2;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.18);
+}
+
 .btn-primary:hover {
   background-color: #059669;
   box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
@@ -1438,6 +1639,11 @@ body {
 .toast-error {
   background-color: #ef4444;
   border: 1px solid #dc2626;
+}
+
+.toast-info {
+  background-color: #0ea5e9;
+  border: 1px solid #0284c7;
 }
 
 @keyframes slideIn {
@@ -1920,6 +2126,46 @@ body {
   color: #f1f5f9;
   font-size: 2rem;
   font-weight: 700;
+}
+
+/* Alert Box */
+.alert-box {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  animation: slideDown 0.3s ease-out;
+}
+
+.alert-box.alert-error {
+  background-color: rgba(239, 68, 68, 0.15);
+  border: 2px solid #ef4444;
+  color: #fca5a5;
+}
+
+.alert-box.alert-success {
+  background-color: rgba(16, 185, 129, 0.15);
+  border: 2px solid #10b981;
+  color: #a7f3d0;
+}
+
+.alert-box.alert-warning {
+  background-color: rgba(245, 158, 11, 0.15);
+  border: 2px solid #f59e0b;
+  color: #fed7aa;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Utility improvements */

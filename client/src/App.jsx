@@ -10,6 +10,8 @@ import NotificationsPage from "./pages/NotificationsPage.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
 
 const AppLayout = ({ children, onLogout, currentUser }) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md sticky top-0 z-40">
@@ -26,7 +28,9 @@ const AppLayout = ({ children, onLogout, currentUser }) => {
             </span>
             <span className="bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">HabitFlow</span>
           </Link>
-          <nav className="flex items-center gap-1 text-sm">
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-1 text-sm">
             {currentUser && (
               <>
                 <Link
@@ -78,7 +82,75 @@ const AppLayout = ({ children, onLogout, currentUser }) => {
               </>
             )}
           </nav>
+
+          {/* Mobile Burger Menu Button */}
+          {currentUser && (
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-slate-800 hover:bg-slate-700 transition text-emerald-400"
+              aria-label="Toggle menu"
+            >
+              <span className="flex flex-col gap-1.5 w-5 h-5">
+                <span className={`block h-0.5 w-5 bg-emerald-400 transition-all ${menuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
+                <span className={`block h-0.5 w-5 bg-emerald-400 transition-all ${menuOpen ? 'opacity-0' : ''}`}></span>
+                <span className={`block h-0.5 w-5 bg-emerald-400 transition-all ${menuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+              </span>
+            </button>
+          )}
         </div>
+
+        {/* Mobile Navigation Menu */}
+        {currentUser && menuOpen && (
+          <nav className="md:hidden bg-slate-800/95 border-t border-slate-700 px-4 py-3">
+            <div className="flex flex-col gap-2">
+              <Link
+                to="/habits"
+                className="block rounded-lg px-4 py-3 text-slate-300 font-medium transition hover:bg-slate-700 hover:text-emerald-400"
+                onClick={() => setMenuOpen(false)}
+              >
+                🎯 Привычки
+              </Link>
+              <Link
+                to="/days"
+                className="block rounded-lg px-4 py-3 text-slate-300 font-medium transition hover:bg-slate-700 hover:text-blue-400"
+                onClick={() => setMenuOpen(false)}
+              >
+                📅 Дни
+              </Link>
+              <Link
+                to="/stats"
+                className="block rounded-lg px-4 py-3 text-slate-300 font-medium transition hover:bg-slate-700 hover:text-purple-400"
+                onClick={() => setMenuOpen(false)}
+              >
+                📊 Статистика
+              </Link>
+              <Link
+                to="/profile"
+                className="block rounded-lg px-4 py-3 text-slate-300 font-medium transition hover:bg-slate-700 hover:text-cyan-400"
+                onClick={() => setMenuOpen(false)}
+              >
+                👤 Профиль
+              </Link>
+              <Link
+                to="/notifications"
+                className="block rounded-lg px-4 py-3 text-slate-300 font-medium transition hover:bg-slate-700 hover:text-emerald-400"
+                onClick={() => setMenuOpen(false)}
+              >
+                📧 Уведомления
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onLogout();
+                }}
+                className="w-full mt-2 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:shadow-emerald-500/50 hover:from-emerald-400 hover:to-emerald-500"
+              >
+                Выход
+              </button>
+            </div>
+          </nav>
+        )}
       </header>
       <main className="flex-1">
         <div className="mx-auto max-w-5xl px-4 py-8">{children}</div>
