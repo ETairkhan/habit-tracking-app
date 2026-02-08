@@ -44,17 +44,6 @@ export const createApp = () => {
   app.use("/api/notifications", notificationRoutes);
   app.use("/api/admin", adminRoutes);
 
-  // Serve static frontend files in production
-  if (process.env.NODE_ENV === "production") {
-    const clientDistPath = path.join(__dirname, "..", "client");
-    app.use(express.static(clientDistPath));
-    
-    // Handle client-side routing
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(clientDistPath, "index.html"));
-    });
-  }
-
   app.use(errorHandler);
 
   return app;
