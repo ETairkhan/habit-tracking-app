@@ -11,6 +11,8 @@ const DaysPage = () => {
   const [showCloseReport, setShowCloseReport] = useState(false);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [isEditingDay, setIsEditingDay] = useState(false);
+  const [isSavingDay, setIsSavingDay] = useState(false);
   const [newDayForm, setNewDayForm] = useState({
     date: new Date().toISOString().split("T")[0],
     dayNotes: "",
@@ -27,12 +29,8 @@ const DaysPage = () => {
   useEffect(() => {
     if (days.length > 0) {
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayData = days.find((d) => {
-        const dayDate = new Date(d.date + 'T00:00:00');
-        dayDate.setHours(0, 0, 0, 0);
-        return dayDate.getTime() === today.getTime();
-      });
+      const todayStr = today.toISOString().split('T')[0];
+      const todayData = days.find((d) => d.date === todayStr);
       if (todayData && todayData.day && !selectedDay) {
         setSelectedDay(todayData.day);
       }
@@ -74,16 +72,37 @@ const DaysPage = () => {
     }
     
     try {
+      setIsSavingDay(true);
+      showToast("💾 Сохраняется...", "info");
+      
+      // Ensure date is in YYYY-MM-DD format for UTC consistency
+      let dateStr = newDayForm.date;
+      if (dateStr.includes('T')) {
+        dateStr = dateStr.split('T')[0];
+      }
+
       const dayData = {
-        date: newDayForm.date,
+        date: dateStr,
         dayNotes: newDayForm.dayNotes,
         mood: parseInt(newDayForm.mood),
         energy: parseInt(newDayForm.energy),
         habits: newDayForm.habits,
         tags: newDayForm.tags.split(",").map((t) => t.trim()).filter((t) => t),
       };
-      const response = await dayAPI.create(dayData);
+
+      let response;
+      if (isEditingDay && selectedDay) {
+        // Обновляем существующий день
+        response = await dayAPI.update(selectedDay._id, dayData);
+        showToast("✅ День обновлён успешно!", "success");
+      } else {
+        // Создаём новый день
+        response = await dayAPI.create(dayData);
+        showToast("✅ День создан успешно!", "success");
+      }
+
       setShowCreateModal(false);
+      setIsEditingDay(false);
       setNewDayForm({
         date: new Date().toISOString().split("T")[0],
         dayNotes: "",
@@ -93,12 +112,11 @@ const DaysPage = () => {
         tags: "",
       });
       loadData();
-      
-      const message = response.status === 201 ? "День создан!" : "День обновлён!";
-      showToast(message, "success");
     } catch (error) {
-      console.error("Create error:", error);
-      showToast("Ошибка при сохранении дня", "error");
+      console.error("Create/Update error:", error);
+      showToast("❌ Ошибка при сохранении дня", "error");
+    } finally {
+      setIsSavingDay(false);
     }
   };
 
@@ -107,6 +125,7 @@ const DaysPage = () => {
       await dayAPI.update(selectedDay._id, { status: "completed" });
       showToast("День завершён!", "success");
       setShowCloseReport(false);
+      setSelectedDay(null);
       loadData();
     } catch (error) {
       console.error("Complete error:", error);
@@ -116,11 +135,35 @@ const DaysPage = () => {
 
   const handleToggleHabitCompletion = async (habitId) => {
     try {
-      const habit = selectedDay.habits.find((h) => h.habit._id === habitId);
+      const habit = selectedDay.habits.find((h) => h.habit._id.toString() === habitId.toString());
+      if (!habit) {
+        showToast("Привычка не найдена", "error");
+        return;
+      }
+      
       await dayAPI.checkHabit(selectedDay._id, habitId, {
         completed: !habit.completed,
       });
-      loadData();
+      
+      // Обновляем локальное состояние без полной перезагрузки
+      const updatedSelectedDay = {
+        ...selectedDay,
+        habits: selectedDay.habits.map((h) => {
+          if (h.habit._id.toString() === habitId.toString()) {
+            return {
+              ...h,
+              completed: !h.completed,
+            };
+          }
+          return h;
+        }),
+        completedHabits: habit.completed 
+          ? selectedDay.completedHabits - 1 
+          : selectedDay.completedHabits + 1,
+      };
+      
+      setSelectedDay(updatedSelectedDay);
+      showToast(habit.completed ? "Привычка отмечена как невыполненная" : "Привычка выполнена!", "success");
     } catch (error) {
       console.error("Toggle error:", error);
       showToast("Ошибка при обновлении привычки", "error");
@@ -130,8 +173,9 @@ const DaysPage = () => {
   const handleAddHabitToDay = async (habitId) => {
     try {
       await dayAPI.addHabit(selectedDay._id, habitId);
-      loadData();
       showToast("Привычка добавлена!", "success");
+      // Полностью перезагружаем данные
+      loadData();
     } catch (error) {
       console.error("Add error:", error);
       showToast("Ошибка при добавлении привычки", "error");
@@ -141,8 +185,14 @@ const DaysPage = () => {
   const handleRemoveHabitFromDay = async (habitId) => {
     try {
       await dayAPI.removeHabit(selectedDay._id, habitId);
-      loadData();
       showToast("Привычка удалена!", "success");
+      // Обновляем локальное состояние
+      const updatedSelectedDay = {
+        ...selectedDay,
+        habits: selectedDay.habits.filter((h) => h.habit._id.toString() !== habitId.toString()),
+        totalHabits: selectedDay.totalHabits - 1,
+      };
+      setSelectedDay(updatedSelectedDay);
     } catch (error) {
       console.error("Remove error:", error);
       showToast("Ошибка при удалении привычки", "error");
@@ -191,18 +241,9 @@ const DaysPage = () => {
     if (hasDay) {
       setSelectedDay(dayData.day);
     } else {
-      // Исправляем проблему с часовым поясом
-      const dayDate = typeof dayData.date === 'string' 
-        ? new Date(dayData.date + 'T00:00:00')
-        : new Date(dayData.date);
-      
-      // Используем UTC для корректного отображения даты
-      const year = dayDate.getUTCFullYear();
-      const month = String(dayDate.getUTCMonth() + 1).padStart(2, '0');
-      const day = String(dayDate.getUTCDate()).padStart(2, '0');
-      
+      // dayData.date уже в формате YYYY-MM-DD
       setNewDayForm({
-        date: `${year}-${month}-${day}`,
+        date: dayData.date,
         dayNotes: "",
         mood: 3,
         energy: 3,
@@ -211,6 +252,22 @@ const DaysPage = () => {
       });
       setShowCreateModal(true);
     }
+  };
+
+  // Функция для добавления привычек к существующему дню
+  const handleShowAddHabitsModal = () => {
+    if (!selectedDay) return;
+    const selectedHabitIds = selectedDay.habits.map(h => h.habit._id);
+    setNewDayForm({
+      date: selectedDay.date,
+      dayNotes: selectedDay.dayNotes || "",
+      mood: selectedDay.mood || 3,
+      energy: selectedDay.energy || 3,
+      habits: selectedHabitIds,
+      tags: selectedDay.tags?.join(", ") || "",
+    });
+    setIsEditingDay(true);
+    setShowCreateModal(true);
   };
 
   if (loading) {
@@ -230,7 +287,21 @@ const DaysPage = () => {
 
       <div className="page-header">
         <h1>📅 Дни</h1>
-        <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
+        <button 
+          className="btn btn-primary" 
+          onClick={() => {
+            setIsEditingDay(false);
+            setNewDayForm({
+              date: new Date().toISOString().split("T")[0],
+              dayNotes: "",
+              mood: 3,
+              energy: 3,
+              habits: [],
+              tags: "",
+            });
+            setShowCreateModal(true);
+          }}
+        >
           ➕ Новый день
         </button>
       </div>
@@ -254,10 +325,9 @@ const DaysPage = () => {
             {days && days.length > 0 ? (
               days.map((dayData, index) => {
                 const hasDay = dayData.day !== null;
-                // Исправляем получение даты
-                const dayDate = typeof dayData.date === 'string' 
-                  ? new Date(dayData.date + 'T00:00:00')
-                  : new Date(dayData.date);
+                // Парсим дату как UTC дату
+                const [year, month, day] = dayData.date.split('-').map(Number);
+                const dayDate = new Date(Date.UTC(year, month - 1, day));
                 
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
@@ -266,8 +336,7 @@ const DaysPage = () => {
                 compareDate.setHours(0, 0, 0, 0);
                 
                 const isToday = compareDate.getTime() === today.getTime();
-                const isSelected = selectedDay && 
-                  new Date(selectedDay.date + 'T00:00:00').getTime() === compareDate.getTime();
+                const isSelected = selectedDay && selectedDay.date === dayData.date;
 
                 return (
                   <div
@@ -296,7 +365,16 @@ const DaysPage = () => {
         <div className="day-section">
           {selectedDay ? (
             <div className="day-detail">
-              <h2>{new Date(selectedDay.date).toLocaleDateString("ru-RU")}</h2>
+              <h2>
+                {(() => {
+                  // Получаем дату в формате YYYY-MM-DD из ISO строки
+                  const dateStr = selectedDay.date.split('T')[0];
+                  // Парсим дату как UTC
+                  const [year, month, day] = dateStr.split('-');
+                  // Форматируем в DD.MM.YYYY без преобразования часовых поясов
+                  return `${day}.${month}.${year}`;
+                })()}
+              </h2>
               <p>Привычки: {selectedDay.completedHabits}/{selectedDay.totalHabits}</p>
               {selectedDay.habits && selectedDay.habits.length > 0 ? (
                 <div>
@@ -309,6 +387,13 @@ const DaysPage = () => {
                       />
                       <span>{getHabitIcon(habit.habit.icon)} {habit.habit.name}</span>
                       {habit.quality && <span className="quality-badge">Качество: {habit.quality}/5</span>}
+                      <button 
+                        className="btn-remove-habit" 
+                        onClick={() => handleRemoveHabitFromDay(habit.habit._id)}
+                        title="Удалить привычку из дня"
+                      >
+                        ✕
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -316,6 +401,13 @@ const DaysPage = () => {
                 <p>Нет привычек</p>
               )}
               <div className="day-actions">
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={handleShowAddHabitsModal}
+                  title="Добавить или изменить привычки"
+                >
+                  ➕ Изменить
+                </button>
                 {selectedDay.status !== "completed" && (
                   <button className="btn btn-primary" onClick={() => setShowCloseReport(true)}>
                     ✅ Завершить день
@@ -354,7 +446,7 @@ const DaysPage = () => {
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>📅 Создать день</h2>
+            <h2>{isEditingDay ? "📅 Изменить день" : "📅 Создать день"}</h2>
             <form onSubmit={handleCreateDay}>
               <div className="form-group">
                 <label>Дата:</label>
@@ -362,6 +454,7 @@ const DaysPage = () => {
                   type="date"
                   value={newDayForm.date}
                   onChange={(e) => setNewDayForm({ ...newDayForm, date: e.target.value })}
+                  disabled={isEditingDay}
                   required
                 />
               </div>
@@ -401,6 +494,11 @@ const DaysPage = () => {
               </div>
               <div className="form-group">
                 <label>Привычки (выберите хотя бы одну):</label>
+                {newDayForm.habits.length === 0 && (
+                  <div className="alert-box alert-error" style={{ marginBottom: "1rem" }}>
+                    ⚠️ Обязательно выберите хотя бы одну привычку
+                  </div>
+                )}
                 {habits && habits.length > 0 ? (
                   habits.map((habit) => (
                     <label key={habit._id} className="checkbox">
@@ -421,21 +519,24 @@ const DaysPage = () => {
                 ) : (
                   <p style={{ color: "#ef4444" }}>Сначала создайте привычки в разделе "Привычки"</p>
                 )}
-                {newDayForm.habits.length === 0 && (
-                  <p style={{ color: "#ef4444", fontSize: "0.8rem", marginTop: "0.5rem" }}>
-                    Выберите хотя бы одну привычку
-                  </p>
-                )}
               </div>
               <div className="modal-actions">
                 <button 
                   type="submit" 
                   className="btn btn-primary"
-                  disabled={newDayForm.habits.length === 0}
+                  disabled={newDayForm.habits.length === 0 || isSavingDay}
                 >
-                  Создать
+                  {isSavingDay ? "⏳ Сохраняется..." : (isEditingDay ? "💾 Сохранить изменения" : "➕ Создать")}
                 </button>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowCreateModal(false)}>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setIsEditingDay(false);
+                  }}
+                  disabled={isSavingDay}
+                >
                   Отмена
                 </button>
               </div>

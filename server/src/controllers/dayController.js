@@ -14,17 +14,15 @@ export const createDay = async (req, res) => {
     const { date, habits, dayNotes, mood, energy, tags } = req.body;
     const userId = req.user.id;
 
-    // Parse and normalize the date
-    const dateObj = new Date(date);
-    dateObj.setHours(0, 0, 0, 0);
+    // Parse and normalize the date - treat date string as UTC
+    // Input format: "YYYY-MM-DD" (no timezone info)
+    const [year, month, day] = date.split('-').map(Number);
+    const dateObj = new Date(Date.UTC(year, month - 1, day));
     
     // Check if day already exists for this user on this date
     const existingDay = await Day.findOne({
       user: userId,
-      date: {
-        $gte: dateObj,
-        $lt: new Date(dateObj.getTime() + 24 * 60 * 60 * 1000),
-      },
+      date: dateObj,
     }).populate("habits.habit");
 
     // If day exists, update it instead of creating a new one
@@ -338,12 +336,11 @@ export const getMonthlyDays = async (req, res) => {
     const numYear = parseInt(year);
     const numMonth = parseInt(month);
 
-    // Create proper date boundaries
-    const startDate = new Date(numYear, numMonth - 1, 1);
-    startDate.setHours(0, 0, 0, 0);
-    
-    const endDate = new Date(numYear, numMonth, 0);
-    endDate.setHours(23, 59, 59, 999);
+    // Create proper date boundaries using UTC
+    const startDate = new Date(Date.UTC(numYear, numMonth - 1, 1));
+    const endDate = new Date(Date.UTC(numYear, numMonth, 0));
+    // Set end date to end of last day of month
+    endDate.setUTCHours(23, 59, 59, 999);
 
     const days = await Day.find({
       user: userId,
@@ -364,15 +361,14 @@ export const getMonthlyDays = async (req, res) => {
 
     // Generate calendar with null entries for missing days
     const monthDays = [];
-    const daysInMonth = new Date(numYear, numMonth, 0).getDate();
+    const daysInMonth = new Date(Date.UTC(numYear, numMonth, 0)).getUTCDate();
     const weekdayNames = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"];
 
     for (let i = 1; i <= daysInMonth; i++) {
-      const date = new Date(numYear, numMonth - 1, i);
-      date.setHours(0, 0, 0, 0);
+      const date = new Date(Date.UTC(numYear, numMonth - 1, i));
       const dateStr = date.toISOString().split("T")[0];
       // Convert JS weekday (0=Sun) to ISO (0=Mon)
-      const dayOfWeek = weekdayNames[(date.getDay() + 6) % 7];
+      const dayOfWeek = weekdayNames[(date.getUTCDay() + 6) % 7];
 
       monthDays.push({
         date: dateStr,
