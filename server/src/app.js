@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import habitRoutes from "./routes/habitRoutes.js";
@@ -11,6 +13,10 @@ import adminRoutes from "./routes/adminRoutes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 dotenv.config();
+
+// Get current directory for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const createApp = () => {
   const app = express();
@@ -40,11 +46,12 @@ export const createApp = () => {
 
   // Serve static frontend files in production
   if (process.env.NODE_ENV === "production") {
-    app.use(express.static("../client/dist"));
+    const clientDistPath = path.join(__dirname, "..", "client", "dist");
+    app.use(express.static(clientDistPath));
     
     // Handle client-side routing
     app.get("*", (req, res) => {
-      res.sendFile("../client/dist/index.html");
+      res.sendFile(path.join(clientDistPath, "index.html"));
     });
   }
 
