@@ -6,7 +6,6 @@ A full-featured web application for tracking personal habits with analytics, cal
 
 - [Project Overview](#project-overview)
 - [Quick Start](#quick-start)
-- [Installation](#installation)
 - [Project Structure](#project-structure)
 - [Features](#features)
 - [API Documentation](#api-documentation)
