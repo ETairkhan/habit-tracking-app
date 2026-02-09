@@ -413,4 +413,4 @@ Database:
 ## Links
 
 GitHub Repository: https://github.com/ETairkhan/habit-tracking-app
-Deployed Project: https://habit-tracking-app-rama.onrender.com
+Deployed Project: https://habit-tracking-app-2-vykk.onrender.com
