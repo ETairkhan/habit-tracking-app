@@ -55,35 +55,6 @@ npm run dev
 # Open http://localhost:5173
 
 
-## Project Structure
-
-habit-tracking-app-main/
-├── server/                    # Backend (Node.js + Express)
-│   ├── src/
-│   │   ├── app.js
-│   │   ├── server.js
-│   │   ├── config/            # Database & roles config
-│   │   ├── controllers/       # Business logic
-│   │   ├── models/            # MongoDB schemas
-│   │   ├── routes/            # API endpoints
-│   │   ├── middleware/        # Auth & error handling
-│   │   └── services/          # Email service
-│   └── package.json
-│
-├── client/                    # Frontend (React + Vite)
-│   ├── src/
-│   │   ├── main.jsx
-│   │   ├── App.jsx
-│   │   ├── apiClient.js
-│   │   ├── styles.css
-│   │   └── pages/             # UI pages
-│   ├── index.html
-│   └── package.json
-│
-└── package.json
-
----
-
 ## Features
 
 ### Authentication
